@@ -1,0 +1,76 @@
+PipelineConfig
+	- Step_Id, Product_Id ,Step_Name, Parent_id, Link, meta-data
+
+PipelineStatus
+	- Build_Id, Step_Id, Status, start-time, end-time,meta-data
+	
+
+Flask APIs
+	- For now populating PipelineConfig is manual 
+	- New Build should populate PipelineStatus
+	- Current PipelineStatus for a build
+	- OnChange update Entries in PipelineStatus
+
+
+Code Compilation -> Build media -> ADQ SMC Mode -> ADQ CIRCL Mode -> Regression -> Quality Score
+
+from flask import Flask, jsonify
+import sqlite3
+
+app = Flask(__name__)
+
+# Define endpoint for getting PipelineConfig data for a specific Product_Id
+@app.route('/pipelineconfig/<int:product_id>')
+def get_pipelineconfig(product_id):
+    # Connect to SQLite database
+    conn = sqlite3.connect('your_database_name.sqlite')
+
+    # Execute SQL query to retrieve PipelineConfig data for the specified Product_Id
+    cursor = conn.execute('SELECT * FROM PipelineConfig WHERE Product_Id = ?', (product_id,))
+    rows = cursor.fetchall()
+
+    # Convert the retrieved data into a list of dictionaries
+    pipelineconfig_data = []
+    for row in rows:
+        pipelineconfig_data.append({
+            'Step_Id': row[0],
+            'Product_Id': row[1],
+            'Step_Name': row[2],
+            'Parent_id': row[3],
+            'Link': row[4],
+            'meta_data': row[5]
+        })
+
+    # Close database connection
+    conn.close()
+
+    # Return the PipelineConfig data as a JSON response
+    return jsonify(pipelineconfig_data)
+	
+	from flask import Flask, jsonify, request
+import sqlite3
+
+app = Flask(__name__)
+
+@app.route('/pipelinestatus/<int:build_id>')
+def get_pipeline_status(build_id):
+    conn = sqlite3.connect('mydatabase.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM PipelineStatus WHERE Build_Id=?", (build_id,))
+    rows = c.fetchall()
+    conn.close()
+    pipeline_status = []
+    for row in rows:
+        pipeline_status.append({
+            'Build_Id': row[0],
+            'Step_Id': row[1],
+            'Status': row[2],
+            'start-time': row[3],
+            'end-time': row[4],
+            'meta-data': row[5]
+        })
+    return jsonify(pipeline_status)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
